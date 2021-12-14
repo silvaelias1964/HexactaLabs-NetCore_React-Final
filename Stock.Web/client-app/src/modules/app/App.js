@@ -13,6 +13,7 @@ import StorePage from "../stores/page";
 
 import PropTypes from "prop-types";
 
+
 const Private = props => {
   if (localStorage.getItem("JWT_LOGIN")) {
     return props.children;
@@ -34,9 +35,13 @@ const App = props => (
   </Private>
 );
 
+
 Private.propTypes = {
   children: PropTypes.array
 };
 
 App.displayName = "App";
+
+
+
 export default App;

@@ -19,12 +19,18 @@ namespace Stock.Api.Controllers
         private readonly ProductService service;
         private readonly ProductTypeService productTypeService;
         private readonly IMapper mapper;
+        private readonly ProviderService providerService;
 
-        public ProductController(ProductService service, ProductTypeService productTypeService, IMapper mapper)
+        public ProductController(
+            ProductService service, 
+            ProductTypeService productTypeService, 
+            IMapper mapper,
+            ProviderService providerService)
         {
             this.service = service;
             this.productTypeService = productTypeService;
             this.mapper = mapper;
+            this.providerService = providerService; 
         }
 
         /// <summary>
@@ -37,6 +43,10 @@ namespace Stock.Api.Controllers
             try
             {
                 var result = this.service.GetAll();
+                if (result == null)
+                {
+                    return NotFound();
+                }
                 return this.mapper.Map<IEnumerable<ProductDTO>>(result).ToList();
             }
             catch(Exception)
@@ -53,7 +63,13 @@ namespace Stock.Api.Controllers
         [HttpGet("{id}")]
         public ActionResult<ProductDTO> Get(string id)
         {
-            return this.mapper.Map<ProductDTO>(this.service.Get(id));
+            var result = this.service.Get(id);
+            if (result == null)
+            {
+                return NotFound();
+            }
+            //return this.mapper.Map<ProductDTO>(this.service.Get(id));
+            return Ok(this.mapper.Map<ProductDTO>(result));
         }
 
         /// <summary>
@@ -68,6 +84,7 @@ namespace Stock.Api.Controllers
             try {
                 var product = this.mapper.Map<Product>(value);
                 product.ProductType = this.productTypeService.Get(value.ProductTypeId.ToString());
+                product.Provider = this.providerService.Get(value.ProviderId.ToString());
                 this.service.Create(product);
                 value.Id = product.Id;
                 return Ok(new { Success = true, Message = "", data = value });
@@ -82,13 +99,18 @@ namespace Stock.Api.Controllers
         /// <param name="id">Identificador de la instancia a editar</param>
         /// <param name="value">Una instancia con los nuevos datos</param>
         [HttpPut("{id}")]
-        public void Put(string id, [FromBody] ProductDTO value)
+        public ActionResult Put(string id, [FromBody] ProductDTO value)
         {
             var product = this.service.Get(id);
             TryValidateModel(value);
+            if (product == null)
+                return NotFound();
+
             this.mapper.Map<ProductDTO, Product>(value, product);
             product.ProductType = this.productTypeService.Get(value.ProductTypeId.ToString());
+            product.Provider = this.providerService.Get(value.ProviderId.ToString());
             this.service.Update(product);
+            return Ok(new { statusCode = "200", result = "Producto modificado exitosamente" });
         }
 
         [HttpPost("search")]
